@@ -3,7 +3,6 @@
 #include <chrono>
 #include <cuda_runtime.h>
 #include <iomanip>
-#include <limits>
 #include <cstdlib>
 
 #define BLOCK_SIZE 256
@@ -54,14 +53,11 @@ long long sequentialSum(const std::vector<int>& data) {
     return sum;
 }
 
-// ---------------- MAIN ----------------
-int main() {
-    long long n = 10000000;  // Input size
-    int maxVal = 1000;       // Maximum random value
-
+// ---------------- RUN TEST FUNCTION ----------------
+void runTest(int n, int maxVal, int testNumber) {
     std::vector<int> data(n);
-    for (long long j = 0; j < n; ++j)
-        data[j] = rand() % maxVal;
+    for (int i = 0; i < n; ++i)
+        data[i] = rand() % maxVal;
 
     int* d_input;
     unsigned long long* d_sum;
@@ -84,8 +80,8 @@ int main() {
     // GPU SUM
     cudaEvent_t start, stop;
     float gpuTimeMs = 0.0;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
     cudaEventRecord(start);
 
     reduceSum<<<numBlocks, BLOCK_SIZE>>>(d_input, d_sum, n);
@@ -97,7 +93,7 @@ int main() {
     CUDA_CHECK(cudaMemcpy(&h_sum, d_sum, sizeof(unsigned long long), cudaMemcpyDeviceToHost));
 
     // Output
-    std::cout << "\nResults:\n";
+    std::cout << "\nTest #" << testNumber << " Results:\n";
     std::cout << "------------------------------\n";
     std::cout << "CPU Sum: " << cpuSum << "\n";
     std::cout << "GPU Sum: " << h_sum << "\n";
@@ -108,6 +104,15 @@ int main() {
     // Cleanup
     cudaFree(d_input);
     cudaFree(d_sum);
+}
+
+int main() {
+    const int n = 10000000;  // Size of array
+    const int maxVal = 1000; // Max value for random numbers
+
+    for (int i = 1; i <= 5; ++i) {
+        runTest(n, maxVal, i);
+    }
 
     return 0;
 }
